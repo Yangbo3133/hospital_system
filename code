@@ -1,0 +1,34 @@
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        # Get login credentials from the form
+        role = request.form['role']
+        phone_number = request.form['phone_number']
+        password = request.form['password']
+
+        cursor = mysql.connection.cursor()
+
+        # Query the database based on user role
+        if role == 'patient':
+            cursor.execute("SELECT * FROM patients WHERE phone_number = %s", (phone_number,))
+        elif role == 'doctor':
+            cursor.execute("SELECT * FROM doctors WHERE phone_number = %s", (phone_number,))
+        elif role == 'nurse':
+            cursor.execute("SELECT * FROM nurses WHERE phone_number = %s", (phone_number,))
+        elif role == 'admin':
+            cursor.execute("SELECT * FROM admins WHERE phone_number = %s", (phone_number,))
+        
+        user = cursor.fetchone()
+        cursor.close()
+
+        # Validate user credentials
+        if user and user['password'] == password:
+            session[role + '_phone'] = phone_number 
+            session['role'] = role
+            return redirect(url_for(role + '_dashboard'))
+        else:
+            # Invalid login credentials
+            return "Invalid login credentials", 401
+
+    # Render the login page
+    return render_template('login.html')
